@@ -1,48 +1,23 @@
-#!/usr/bin/env bash
-#is a challenge
-check_factor()
-{
-	if [ $# -ne 3 ];
-        then
-                args=("$@")
-                count=0
-                num2=1
-                for a in ${args[*]};
-                do
-                        if [ $count -gt 1 ];
-                        then
-                                num2=$(echo $a*$num2 | bc)
-                        fi
-                        count=$((count + 1))
-                done
-        else
-                num2=$3
-        fi
+#!/bin/bash
 
-        num1=$2
-        num=$(echo "$1" | tr ':' '=')
-
-        result=$(echo "if($num2 > $num1) 1 else 0" | bc)
-	        if ((result == 1)); then
-		        numcp=$num1
-		        num1=$num2
-		        num2=$numcp
-                fi
-
-        echo "$num$num1*$num2"
+# split a number >> 64-bit
+handle_big () {
+	num=$1
+	len=$2
+	first=${num:0:$((len/2))}
+	second=${num:$((len/2)):$(((len/2)+(len%2)))}
+	factors=($(factor $num))
+	x=${factors[1]}
+	rem="$((first%x))$second"
+	printf "$num=$((first/x))$((rem/x))*$x\n"
 }
 
-if [ $# -ne 1 ]
-then
-        echo 'Usage: rsa <file>'
-        exit 1
-else
-
-        while read i
-        do
-
-                result=$(factor "$i")
-                check_factor $result
-
-        done < "$1"
-fi
+# handle factoring
+while read line; do
+	if [ ${#line} -ge 18 ]; then
+		handle_big $line ${#line}
+		continue
+	fi
+	factors=($(factor $line))
+	echo -e "${line}=$((line/factors[1]))*${factors[1]}"
+done < $1
